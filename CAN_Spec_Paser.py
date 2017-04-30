@@ -3,6 +3,7 @@ from collections import OrderedDict
 if __name__ == '__main__':
     with open('../MY17_Can_Library/can_validator/fsae_can_spec.txt', 'r') as in_file:
         with open('CAN_SPEC.py', 'w') as out_file:
+            out_file.write('from collections import OrderedDict\n\n')
 
             #parse for CAN IDs and data
             ID_Dict = {}

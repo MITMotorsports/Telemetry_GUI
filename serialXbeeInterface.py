@@ -1,8 +1,9 @@
 import serial
 import sys
 import argparse
-import random
+import random as rd
 import time
+import CAN_SPEC
 
 def syncXbee(xBeeSerial):
     notSync = True
@@ -16,9 +17,10 @@ def syncXbee(xBeeSerial):
                 xBeeSerial.write(ack.encode('utf-8'))
                 notSync = False
 
-def mainLoop(xbeeData):
+def mainLoop(xbee):
     loop = True
     num = 0
+    line_count = 0
     while(loop):
         # try:
         #     inp = sys.stdin.readlines()
@@ -29,20 +31,52 @@ def mainLoop(xbeeData):
         #         xbee.write(inp)
         # except StopIteration:
         #     pass
-        bat = random.randint(0, 100)
-        t = random.randint(0, 100)
-        b = random.randint(0, 100)
-        batString = str(num) + '_1_' + str(bat) + '\n'
-        tString = str(num) + '_4_' + str(t) + '\n'
-        bString = str(num) + '_5_' + str(b) + '\n'
-        xbee.write(batString.encode('utf-8'))
-        xbee.write(tString.encode('utf-8'))
-        xbee.write(bString.encode('utf-8'))
-        print(batString)
-        print(tString)
-        print(bString)
-        num = num + 1;
+        tmp_choice = rd.choice(list(CAN_SPEC.ID_Dict.items()))
+        ID = tmp_choice[1]
+        print(tmp_choice)
+        data_dict = CAN_SPEC.Data_Pos_Dict[tmp_choice[0]]
+        # print(data_dict)
+        data = 0
+        data_count = 0
+        for k, v in data_dict.items():
+            for i in range(v[0], v[1]+1):
+                # print(rd.randint(0,1)<<i%8)
+                # data[i//8] = data[i//8] + rd.randint(0,1)<<i%8
+                data = data + rd.randint(0,1)<<i
+                # print(data)
+
+        # for i in range(len(data)):
+        #     data[i] = bytes(data[i])
+            # print(bytes(data[i]))
+        MSG = data.to_bytes((data.bit_length()//8 + 1), byteorder='little')
+        # print('MSG')
+        curr_time = int(time.time())
+        # time_stamp = curr_time.to_bytes((curr_time.bit_length()//8 + 1), byteorder='little')
+        time_stamp = str(curr_time).encode()
+        # print("start")
+        wrote = xbee.write(time_stamp)
+        # print(wrote)
+        wrote = xbee.write('_'.encode())
+        # print(wrote)
+        wrote = xbee.write(ID.to_bytes((ID.bit_length()//8 + 1), byteorder='little'))
+        # print(wrote)
+        wrote = xbee.write('_'.encode())
+        # print(wrote)
+        wrote = xbee.write(MSG)
+        # print(wrote)
+        wrote = xbee.write('_'.encode())
+        # print(wrote)
+        wrote = xbee.write(line_count.to_bytes((line_count.bit_length()//8 + 1), byteorder='little'))
+        # print(wrote)
+        wrote = xbee.write('\n'.encode())
+        # print(wrote)
+
+        # print("Done")
+        # print(line_count)
+        # print("^lines^")
+
         time.sleep(.1)
+        line_count = line_count + 1
 
         # tmp = []
         # if xbee.in_waiting > 0:
@@ -55,11 +89,11 @@ def mainLoop(xbeeData):
         #     xbeeData += tmp[0].decode()
 
 try:
-    xbee = serial.Serial(port='/dev/cu.usbserial-DN01HQ13')
+    xbee = serial.Serial(port='/dev/cu.usbserial-DN01HQ13', baudrate=115200)
     xbee.isOpen()
     #syncXbee(xbee)
     xbeeData = ''
-    mainLoop(xbeeData)
+    mainLoop(xbee)
 except KeyboardInterrupt:
     xbee.close()
     exit()
