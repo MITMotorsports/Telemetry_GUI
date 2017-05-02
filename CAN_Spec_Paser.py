@@ -16,7 +16,7 @@ if __name__ == '__main__':
                     print(cur_msg_name)
                     ID = int(tmp[1][3:], 16)
                     print(tmp[1][3:])
-                    ID_Dict[cur_msg_name] = ID
+                    ID_Dict[ID] = cur_msg_name
 
                 if 'DATA_NAME' in line:
                     tmp = line.split(' ')
@@ -43,8 +43,8 @@ if __name__ == '__main__':
                     first = 0
                 else:
                     out_file.write(',\n')
-                out_file.write('\'' + k + '\':')
-                out_file.write(str(v))
+                out_file.write(str(k)+':')
+                out_file.write('\'' + v + '\'')
 
             out_file.write('}\n\n')
 

@@ -142,7 +142,7 @@ class XbeeLiveData(QWidget):
         super().__init__()
         #Open the serial port to communicate with xbee
         self.serialPort = serialPort
-        self.xbee = serial.Serial(port='/dev/'+serialPort)
+        self.xbee = serial.Serial(port='/dev/'+serialPort, baudrate=115200)
         self.xbee.isOpen()
         #syncXbee(self.xbee)
         #Initialize a thread to run the live data view in
@@ -198,22 +198,18 @@ class XbeeLiveData(QWidget):
         while(self.continueThread.is_set()):
             tmp = []
             if self.xbee.in_waiting > 0:
-                val = self.xbee.read(1)
-                tmp.append(val)
+                xbeeData, payload = read_packet(self.xbee)
 
-            if tmp == [b'\n']:
+                print('xbeeData {0}'.format(xbeeData))
+
                 self.logOutput.moveCursor(QTextCursor.End)
                 self.logOutput.insertPlainText(xbeeData+'\n')
                 sb = self.logOutput.verticalScrollBar()
                 sb.setValue(sb.maximum())
-
-                newData = parseMessage(xbeeData)
+                newData = parseMessage(xbeeData, payload)
                 if newData != None:
                     self.updateVisuals(newData)
 
-                xbeeData = ''
-            elif tmp != []:
-                xbeeData += val.decode()
 
     def updateVisuals(self, data):
         if BATTERY_SOC in data:
