@@ -17,6 +17,7 @@ from matplotlib.figure import Figure
 import numpy as np
 
 from xbeeParser import *
+import CAN_SPEC
 
 class MyMplCanvas(FigureCanvas):
     """Ultimately, this is a QWidget (as well as a FigureCanvasAgg, etc.)."""
@@ -49,6 +50,10 @@ class batteryGraph(MyMplCanvas):
         self.axes.set_title('Battery SOC')
 
     def update_figure(self, soc):
+        first = CAN_SPEC.Data_Pos_Dict['CURRENT_SENSOR_ENERGY']['PACK_ENERGY'][0]
+        last = CAN_SPEC.Data_Pos_Dict['CURRENT_SENSOR_ENERGY']['PACK_ENERGY'][1]
+        max_soc = 2**(last - first) - 1
+        soc = (soc/max_soc)*100
         if soc >= 20:
             c = 'y'
             if soc >= 50:
@@ -86,16 +91,20 @@ class LineGraph(MyMplCanvas):
         else:
             self.axes.set_ylabel(self.data_title + ' ' + self.unitsY)
 
-    def update_figure(self, newData):
+    def update_figure(self, timestamp, data):
         self.axes.lines.remove(self.axes.lines[0]);
         if(len(self.time_buffer) < self.buffer_length):
-            self.time_buffer.append(newData.get(TIME))
-            self.data_buffer.append(newData.get(self.data_name))
+            # self.time_buffer.append(newData.get(TIME))
+            # self.data_buffer.append(newData.get(self.data_name))
+            self.time_buffer.append(timestamp)
+            self.data_buffer.append(data)
         else:
             self.time_buffer.pop(0)
             self.data_buffer.pop(0)
-            self.time_buffer.append(newData.get(TIME))
-            self.data_buffer.append(newData.get(self.data_name))
+            # self.time_buffer.append(newData.get(TIME))
+            # self.data_buffer.append(newData.get(self.data_name))
+            self.time_buffer.append(timestamp)
+            self.data_buffer.append(data)
 
         self.line = self.axes.plot(self.time_buffer, self.data_buffer)
         self.axes.set_xlim([self.time_buffer[0], self.time_buffer[-1]])
@@ -206,18 +215,29 @@ class XbeeLiveData(QWidget):
                 self.logOutput.insertPlainText(xbeeData+'\n')
                 sb = self.logOutput.verticalScrollBar()
                 sb.setValue(sb.maximum())
-                newData = parseMessage(xbeeData, payload)
-                if newData != None:
-                    self.updateVisuals(newData)
+                timestamp, ID, MSG = parseMessage(xbeeData, payload)
+
+                if ID != None:
+                    self.updateVisuals(timestamp, ID, MSG)
 
 
-    def updateVisuals(self, data):
-        if BATTERY_SOC in data:
-            self.batBar.update_figure(data.get(BATTERY_SOC))
-        if THROTTLE in data:
-            self.throttleGraph.update_figure(data)
-        if BRAKE in data:
-            self.brakeGraph.update_figure(data)
+    def updateVisuals(self, timestamp, ID, MSG):
+        if ID == 'CURRENT_SENSOR_ENERGY':
+            self.batBar.update_figure(MSG['PACK_ENERGY'])
+        if ID == 'FRONT_CAN_NODE_DRIVER_OUTPUT':
+            torque = MSG['REQUESTED_TORQUE']
+            first = CAN_SPEC.Data_Pos_Dict['FRONT_CAN_NODE_DRIVER_OUTPUT']['REQUESTED_TORQUE'][0]
+            last = CAN_SPEC.Data_Pos_Dict['FRONT_CAN_NODE_DRIVER_OUTPUT']['REQUESTED_TORQUE'][1]
+            max_torque = 2**(last - first) - 1
+            torque = (torque/max_torque)*100
+            self.throttleGraph.update_figure(timestamp, torque)
+
+            pressure = MSG['BRAKE_PRESSURE']
+            first = CAN_SPEC.Data_Pos_Dict['FRONT_CAN_NODE_DRIVER_OUTPUT']['BRAKE_PRESSURE'][0]
+            last = CAN_SPEC.Data_Pos_Dict['FRONT_CAN_NODE_DRIVER_OUTPUT']['BRAKE_PRESSURE'][1]
+            max_pressure = 2**(last - first) - 1
+            pressure = (pressure/max_pressure)*100
+            self.brakeGraph.update_figure(timestamp, MSG['BRAKE_PRESSURE'])
 
     def closeEvent(self, event):
         reply = QMessageBox.question(self, 'Message',

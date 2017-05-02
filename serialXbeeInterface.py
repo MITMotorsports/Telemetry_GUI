@@ -31,7 +31,11 @@ def mainLoop(xbee):
         #         xbee.write(inp)
         # except StopIteration:
         #     pass
-        tmp_choice = rd.choice(list(CAN_SPEC.ID_Dict.items()))
+        ID = ''
+        tmp_choice = ''
+        while ID != 'FRONT_CAN_NODE_DRIVER_OUTPUT' and ID != 'CURRENT_SENSOR_ENERGY':
+            tmp_choice = rd.choice(list(CAN_SPEC.ID_Dict.items()))
+            ID = tmp_choice[1]
         ID = tmp_choice[0]
         print(tmp_choice)
         data_dict = CAN_SPEC.Data_Pos_Dict[tmp_choice[1]]
@@ -81,7 +85,7 @@ def mainLoop(xbee):
         # print(line_count)
         # print("^lines^")
 
-        time.sleep(.5)
+        time.sleep(.1)
         line_count = line_count + 1
 
         # tmp = []

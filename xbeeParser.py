@@ -54,11 +54,27 @@ def parseMessage(message, payload):
     timestamp = int(spiltMessage[0])
     print('timestamp {0}'.format(timestamp))
     ID = int(spiltMessage[1])
-    print('ID {0}'.format(CAN_SPEC.ID_Dict.get(ID)))
-    MSG = payload
-    print(MSG)
+    ID = CAN_SPEC.ID_Dict.get(ID)
+    if ID == None:
+        return None, None, None
+    print(ID)
+    if 'CURRENT_SENSOR' not in ID:
+        MSG = int.from_bytes(payload, byteorder='little')
+    else:
+        MSG = int.from_bytes(payload, byteorder='big')
 
-    return timestamp, ID, MSG
+    data_dict = CAN_SPEC.Data_Pos_Dict[ID]
+    MSG_data = {}
+    for k, v in data_dict.items():
+        mask = 0
+        print(v)
+        for i in range(v[0], v[1]):
+            mask = mask + (1<<i)
+        MSG_data[k] = MSG & mask
+
+    print(MSG_data)
+
+    return timestamp, ID, MSG_data
 
 
 def parseMessage2(message):
