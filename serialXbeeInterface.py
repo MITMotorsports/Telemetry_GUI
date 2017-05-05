@@ -21,6 +21,7 @@ def mainLoop(xbee):
     loop = True
     num = 0
     line_count = 0
+    out_file = open('../data/'+'33_33_33.txt', 'wb')
     while(loop):
         # try:
         #     inp = sys.stdin.readlines()
@@ -61,33 +62,45 @@ def mainLoop(xbee):
         time_stamp = str(curr_time).encode()
         # print("start")
         wrote = xbee.write(time_stamp)
-        # print(wrote)
+        out_file.write(time_stamp)
+
         wrote = xbee.write('_'.encode())
-        # print(wrote)
+        out_file.write('_'.encode())
         # wrote = xbee.write(ID.to_bytes((ID.bit_length()//8 + 1), byteorder='little'))
         wrote = xbee.write(str(ID).encode())
+        out_file.write(str(ID).encode())
         # print(wrote)
         wrote = xbee.write('_'.encode())
+        out_file.write('_'.encode())
 
         wrote = xbee.write(str(payload_len).encode())
+        out_file.write(str(payload_len).encode())
 
         wrote = xbee.write('_'.encode())
-        # print(wrote)
+        out_file.write('_'.encode())
+
         wrote = xbee.write(MSG)
-        # print(wrote)
-        wrote = xbee.write('_'.encode())
-        # print(wrote)
-        wrote = xbee.write(str(line_count).encode())
-        # print(wrote)
-        wrote = xbee.write('\n'.encode())
+        out_file.write(MSG)
 
+        wrote = xbee.write('_'.encode())
+        out_file.write('_'.encode())
+
+        wrote = xbee.write(str(line_count).encode())
+        out_file.write(str(line_count).encode())
+
+        wrote = xbee.write('\n'.encode())
+        out_file.write('\n'.encode())
         # print("Done")
         # print(line_count)
         # print("^lines^")
 
-        time.sleep(.1)
+        time.sleep(.01)
         line_count = line_count + 1
-
+        if line_count == 100:
+            print(100)
+            xbee.close()
+            out_file.close()
+            exit()
         # tmp = []
         # if xbee.in_waiting > 0:
         #     tmp.append(xbee.read(1))
@@ -110,4 +123,5 @@ if __name__ == '__main__':
         mainLoop(xbee)
     except KeyboardInterrupt:
         xbee.close()
+        out_file.close()
         exit()

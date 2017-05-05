@@ -10,6 +10,7 @@ from PyQt5.QtGui import QIcon, QTextCursor
 from PyQt5.QtCore import QCoreApplication, Qt, QTimer, QEvent
 
 from livePlotting import XbeeLiveData
+from csv_output import raw_to_csv
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -123,7 +124,7 @@ class SDData(QWidget):
     def __init__(self, file_name):
         super().__init__()
         self.file_name = file_name[0]
-        self.f = open(self.file_name, 'r')
+        self.f = open(self.file_name, 'rb')
         self.initUI()
 
     def initUI(self):
@@ -134,12 +135,12 @@ class SDData(QWidget):
         font.setFamily("Courier")
         font.setPointSize(12)
 
-        with self.f:
-            data = self.f.read()
-            textOut.setText(data)
+        folder_loc = raw_to_csv(self.f)
+
+        textOut.setText("SD File Parsed, Data in: {0}".format(folder_loc))
 
         self.setGeometry(300, 300, 500, 500)
-        self.setWindowTitle('SD Data From: ' + self.fname)
+        self.setWindowTitle('SD Data From: ' + self.file_name)
 
     def closeEvent(self, event):
         reply = QMessageBox.question(self, 'Message',
@@ -229,7 +230,7 @@ class DownloadSDWindow(QWidget):
         print(file_name)
 
         #recieve data until black box sends "end\n" and print to file
-        out_file = open('../data/'+file_name, 'w')
+        out_file = open('../data/'+file_name, 'wb')
         scan = True
         xbeeData = ''
         new_line_found = 0
