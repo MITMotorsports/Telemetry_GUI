@@ -142,7 +142,8 @@ def xbee_to_csv(xbee, filename):
         print('raw_data: {0}'.format(data_line))
         timestamp, ID, MSG_data  = parseMessage(data_line, payload)
         print('timestamp: {0}'.format(timestamp))
-        print('ID: {0}\n'.format(ID))
+        print('ID: {0}'.format(ID))
+        print('MSG_data: {0}\n'.format(MSG_data))
         out = [timestamp]
         for k in output_csv_dict_col_map[ID]:
             out.append(MSG_data[k])
