@@ -10,7 +10,7 @@ from PyQt5.QtGui import QIcon, QTextCursor
 from PyQt5.QtCore import QCoreApplication, Qt, QTimer, QEvent
 
 from livePlotting import XbeeLiveData
-from csv_output import raw_to_csv
+from csv_output import raw_to_csv, xbee_to_csv
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -229,28 +229,29 @@ class DownloadSDWindow(QWidget):
         file_name = file_name[0:-1]
         print(file_name)
 
-        #recieve data until black box sends "end\n" and print to file
-        out_file = open('../data/'+file_name, 'wb')
-        scan = True
-        xbeeData = ''
-        new_line_found = 0
-        while scan:
-            # tmp = []
-            if self.xbee.in_waiting > 0:
-                val = self.xbee.read(1)
-                # tmp.append(val)
-
-                if val == b'\n':
-                    if 'end' in xbeeData:
-                        out_file.close()
-                        scan = False
-                        break
-                    else:
-                        print(xbeeData)
-                        out_file.write(xbeeData+'\n');
-                        xbeeData = ''
-                else:
-                    xbeeData += val.decode()
+        xbee_to_csv(self.xbee, file_name)
+        # #recieve data until black box sends "end\n" and print to file
+        # out_file = open('../data/'+file_name, 'wb')
+        # scan = True
+        # xbeeData = ''
+        # new_line_found = 0
+        # while scan:
+        #     # tmp = []
+        #     if self.xbee.in_waiting > 0:
+        #         val = self.xbee.read(1)
+        #         # tmp.append(val)
+        #
+        #         if val == b'\n':
+        #             if 'end' in xbeeData:
+        #                 out_file.close()
+        #                 scan = False
+        #                 break
+        #             else:
+        #                 print(xbeeData)
+        #                 out_file.write(xbeeData+'\n');
+        #                 xbeeData = ''
+        #         else:
+        #             xbeeData += val.decode()
 
 
 

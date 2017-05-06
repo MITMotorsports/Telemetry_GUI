@@ -50,14 +50,15 @@ def read_packet(xbee_stream):
 
 def parseMessage(message, payload):
     #timestamp_ID_MSGLEN_MSG_LineCount
+    # print('Parsing message...')
     spiltMessage = message.split('_')
     timestamp = int(spiltMessage[0])
-    print('timestamp {0}'.format(timestamp))
+    # print('Timestamp: {0}'.format(timestamp))
     ID = int(spiltMessage[1])
     ID = CAN_SPEC.ID_Dict.get(ID)
     if ID == None:
         return None, None, None
-    print(ID)
+    # print('ID Name: {0}'.format(ID))
     if 'CURRENT_SENSOR' not in ID:
         MSG = int.from_bytes(payload, byteorder='little')
     else:
@@ -67,12 +68,13 @@ def parseMessage(message, payload):
     MSG_data = {}
     for k, v in data_dict.items():
         mask = 0
-        print(v)
         for i in range(v[0], v[1]):
             mask = mask + (1<<i)
         MSG_data[k] = MSG & mask
 
-    print(MSG_data)
+    # print("--- Data Dictionary ---")
+    # print(MSG_data)
+    # print("--- Data Dictionary ---")
 
     return timestamp, ID, MSG_data
 
