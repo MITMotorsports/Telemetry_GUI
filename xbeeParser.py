@@ -59,18 +59,25 @@ def parseMessage(message, payload):
     if ID == None:
         return None, None, None
     # print('ID Name: {0}'.format(ID))
-    if 'CURRENT_SENSOR' not in ID:
-        MSG = int.from_bytes(payload, byteorder='little')
-    else:
-        MSG = int.from_bytes(payload, byteorder='big')
-
     data_dict = CAN_SPEC.Data_Pos_Dict[ID]
     MSG_data = {}
-    for k, v in data_dict.items():
-        mask = 0
-        for i in range(v[0], v[1]):
-            mask = mask + (1<<i)
-        MSG_data[k] = MSG & mask
+
+    #Endianess is BULLSHIT
+    if 'CURRENT_SENSOR' not in ID:
+        print("PAYLOAD LITTLE: {0}".format(payload))
+        MSG = int.from_bytes(payload, byteorder='little')
+        print("MSG LITTLE: {0}".format(MSG))
+        for k, v in data_dict.items():
+            mask = 0
+            for i in range(v[0], v[1]+1):
+                mask = mask + (1<<i)
+            MSG_data[k] = (MSG & mask)>>v[0];
+    else:
+        print("PAYLOAD BIG: {0}".format(payload))
+        for k, v in data_dict.items():
+            mask = payload[(v[0]//8):((v[1]//8)+1)]
+            MSG_data[k] = int.from_bytes(mask, byteorder='big')
+            print("MSG BIG: {0}".format(MSG_data[k]))
 
     # print("--- Data Dictionary ---")
     # print(MSG_data)

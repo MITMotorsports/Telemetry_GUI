@@ -52,7 +52,7 @@ class batteryGraph(MyMplCanvas):
     def update_figure(self, soc):
         first = CAN_SPEC.Data_Pos_Dict['CURRENT_SENSOR_ENERGY']['PACK_ENERGY'][0]
         last = CAN_SPEC.Data_Pos_Dict['CURRENT_SENSOR_ENERGY']['PACK_ENERGY'][1]
-        max_soc = 2**(last - first) - 1
+        max_soc = 2**(last - first + 1) - 1
         soc = (soc/max_soc)*100
         if soc >= 20:
             c = 'y'
@@ -70,8 +70,8 @@ class batteryGraph(MyMplCanvas):
 class LineGraph(MyMplCanvas):
     def __init__(self, *args, data_color='g', data_name=THROTTLE,
                     data_title='Throttle', percentageY=1, unitsY='s', **kwargs):
-        self.data_buffer = [0]
-        self.time_buffer = [0]
+        self.data_buffer = []
+        self.time_buffer = []
         self.data_color = data_color
         self.buffer_length = 100
         self.data_name = data_name
@@ -216,6 +216,9 @@ class XbeeLiveData(QWidget):
                 sb = self.logOutput.verticalScrollBar()
                 sb.setValue(sb.maximum())
                 timestamp, ID, MSG = parseMessage(xbeeData, payload)
+                print('Timestamp: {0}'.format(timestamp))
+                print('ID Name: {0}'.format(ID))
+                print('MSG DATA: {0}'.format(MSG))
 
                 if ID != None:
                     self.updateVisuals(timestamp, ID, MSG)
@@ -228,14 +231,14 @@ class XbeeLiveData(QWidget):
             torque = MSG['REQUESTED_TORQUE']
             first = CAN_SPEC.Data_Pos_Dict['FRONT_CAN_NODE_DRIVER_OUTPUT']['REQUESTED_TORQUE'][0]
             last = CAN_SPEC.Data_Pos_Dict['FRONT_CAN_NODE_DRIVER_OUTPUT']['REQUESTED_TORQUE'][1]
-            max_torque = 2**(last - first) - 1
+            max_torque = 2**(last - first + 1) - 1
             torque = (torque/max_torque)*100
             self.throttleGraph.update_figure(timestamp, torque)
 
             pressure = MSG['BRAKE_PRESSURE']
             first = CAN_SPEC.Data_Pos_Dict['FRONT_CAN_NODE_DRIVER_OUTPUT']['BRAKE_PRESSURE'][0]
             last = CAN_SPEC.Data_Pos_Dict['FRONT_CAN_NODE_DRIVER_OUTPUT']['BRAKE_PRESSURE'][1]
-            max_pressure = 2**(last - first) - 1
+            max_pressure = 2**(last - first + 1) - 1
             pressure = (pressure/max_pressure)*100
             self.brakeGraph.update_figure(timestamp, MSG['BRAKE_PRESSURE'])
 
