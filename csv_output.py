@@ -115,7 +115,9 @@ def xbee_to_csv(xbee, filename):
 
         under_count = 0
         while under_count < 3:
-            val = xbee.read(1).decode()
+            val = xbee.read(1)
+            print(val)
+            val = val.decode()
             if val == '_':
                 under_count = under_count + 1
             data_line += val
@@ -128,12 +130,15 @@ def xbee_to_csv(xbee, filename):
             break
 
         split_data = data_line.split('_')
+        print('split_data: {0}'.format(split_data))
         payload_len = int(split_data[2])
         payload = xbee.read(payload_len)
 
         newline = 0
         while not newline:
-            val = xbee.read(1).decode()
+            val = xbee.read(1)
+            print(val)
+            val = val.decode()
             if val == '\n':
                 newline = 1
                 break
