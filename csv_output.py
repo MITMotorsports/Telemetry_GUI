@@ -1,6 +1,6 @@
 import sys
 import os
-import collections
+import collections, itertools
 import csv
 
 import CAN_SPEC
@@ -84,6 +84,13 @@ def raw_to_csv(file_obj):
 #converts a downloaded file of raw CAN messages into a bunch of CSVs
 #parses output until the xbee sends 'end\n'
 def xbee_to_csv(xbee, filename):
+    #read the data coming from the xbee into a giant buffer before parsing it
+    xbee_buffer = collections.deque()
+    while xbee.in_waiting > 0:
+        val = xbee.read(1)
+        if val == b'\n':
+            xbee_buffer.append(val)
+
     #Use the data file name to make a folder to put the CSV data
     csv_name = filename[:-4]
     csv_output_folder = '../data/'+csv_name+'_csv_data'
@@ -107,6 +114,7 @@ def xbee_to_csv(xbee, filename):
 
     #parse data file and put data into appropriate CSV files
     exit = False
+    i = 0
     while not exit:
         # timestamp_ID_MSGLEN_MSG_LineCount
         # ASCCI_ ASCII_ASCII_ BYTES_ASCII
@@ -115,7 +123,8 @@ def xbee_to_csv(xbee, filename):
 
         under_count = 0
         while under_count < 3:
-            val = xbee.read(1)
+            val = xbee_buffer[i]
+            i = i + 1
             print(val)
             val = val.decode()
             if val == '_':
@@ -132,11 +141,14 @@ def xbee_to_csv(xbee, filename):
         split_data = data_line.split('_')
         print('split_data: {0}'.format(split_data))
         payload_len = int(split_data[2])
+        payload = list(itertools.islice(xbee_buffer, i, i+payload_len))
+        i = i + payload_len
         payload = xbee.read(payload_len)
 
         newline = 0
         while not newline:
-            val = xbee.read(1)
+            val = xbee_buffer[i]
+            i = i + 1
             print(val)
             val = val.decode()
             if val == '\n':

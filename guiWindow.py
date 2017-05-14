@@ -187,7 +187,8 @@ class DownloadSDWindow(QWidget):
         file_list = self.list_files()
 
     def list_files(self):
-        self.xbee.reset_input_buffer()
+        self.xbee.reset_input_buffer() #get rid of junk that might cause issues
+
         self.xbee.write('ls\n'.encode('utf-8'))
         scan = True
         xbeeData = ''
@@ -219,6 +220,8 @@ class DownloadSDWindow(QWidget):
         return 0
 
     def download_file(self):
+        self.xbee.reset_input_buffer() #get rid of junk that might cause issues
+
         #Get file name from button name
         sender = self.sender()
         file_name = sender.objectName()
