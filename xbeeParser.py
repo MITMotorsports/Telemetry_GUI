@@ -63,7 +63,7 @@ def parseMessage(message, payload):
     MSG_data = {}
 
     #Endianess is BULLSHIT
-    if 'CURRENT_SENSOR' not in ID:
+    if CAN_SPEC.is_little_endian[ID]:
         print("PAYLOAD LITTLE: {0}".format(payload))
         MSG = int.from_bytes(payload, byteorder='little')
         print("MSG LITTLE: {0}".format(MSG))
