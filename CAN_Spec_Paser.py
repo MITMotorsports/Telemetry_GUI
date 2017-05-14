@@ -9,6 +9,9 @@ if __name__ == '__main__':
             ID_Dict = {}
             Data_Pos_Dict = {}
             cur_msg_name = ''
+            is_little_endian = {}
+
+            current_endian = 0
             for line in in_file:
                 if 'MESSAGE_NAME' in line:
                     tmp = line.split(' ')
@@ -17,6 +20,16 @@ if __name__ == '__main__':
                     ID = int(tmp[1][3:], 16)
                     print(tmp[1][3:])
                     ID_Dict[ID] = cur_msg_name
+                    is_little_endian[cur_msg_name] = current_endian
+
+                if 'ENDIAN=' in line:
+                    tmp = line.split('=')
+                    tmp_endian = tmp[-1][:-1]
+                    print(tmp_endian)
+                    if tmp_endian == 'BIG':
+                        current_endian = 0
+                    else:
+                        current_endian = 1
 
                 if 'DATA_NAME' in line:
                     tmp = line.split(' ')
@@ -34,8 +47,8 @@ if __name__ == '__main__':
                     else:
                         Data_Pos_Dict[cur_msg_name] = OrderedDict({data_name:data_pos})
 
-
-            print(Data_Pos_Dict)
+            #Write ID Dictionary in file
+            # print(Data_Pos_Dict)
             out_file.write('ID_Dict = {')
             first = 1
             for k,v in ID_Dict.items():
@@ -48,6 +61,7 @@ if __name__ == '__main__':
 
             out_file.write('}\n\n')
 
+            #Write data position Dictionary in file
             out_file.write('Data_Pos_Dict = {')
             first = 1
             for k,v in Data_Pos_Dict.items():
@@ -65,6 +79,19 @@ if __name__ == '__main__':
                         out_file.write(', ')
                     out_file.write('(\'' + k_v + '\',(' + str(v_v[0]) + ',' + str(v_v[1]) + '))')
                 out_file.write('])')
+
+            out_file.write('}\n\n')
+
+            #Write Endianess Dictionary in file
+            out_file.write('is_little_endian = {')
+            first = 1
+            for k,v in is_little_endian.items():
+                if first:
+                    first = 0
+                else:
+                    out_file.write(',\n')
+                out_file.write('\'' + k + '\': ')
+                out_file.write(str(v))
 
             out_file.write('}\n\n')
 
