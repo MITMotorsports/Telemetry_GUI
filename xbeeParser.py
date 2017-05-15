@@ -18,6 +18,7 @@ def read_packet(xbee_stream):
     #timestamp_ID_MSGLEN_MSG_LineCount
     xbeeData = ''
     val = xbee_stream.read(1)
+    print(val)
     try:
         xbeeData += val.decode()
     except UnicodeDecodeError:
@@ -65,6 +66,7 @@ def parseMessage(message, payload):
     #Endianess is BULLSHIT
     if CAN_SPEC.is_little_endian[ID]:
         print("PAYLOAD LITTLE: {0}".format(payload))
+        print("BYTE 0: {0}".format(payload[0]))
         MSG = int.from_bytes(payload, byteorder='little')
         print("MSG LITTLE: {0}".format(MSG))
         for k, v in data_dict.items():
@@ -74,10 +76,19 @@ def parseMessage(message, payload):
             MSG_data[k] = (MSG & mask)>>v[0];
     else:
         print("PAYLOAD BIG: {0}".format(payload))
+        print("BYTE 0: {0}".format(payload[0]))
+        MSG = int.from_bytes(payload, byteorder='big')
+        print("MSG BIG: {0}".format(MSG))
         for k, v in data_dict.items():
-            mask = payload[(v[0]//8):((v[1]//8)+1)]
-            MSG_data[k] = int.from_bytes(mask, byteorder='big')
-            print("MSG BIG: {0}".format(MSG_data[k]))
+            mask = 0
+            for i in range(v[0], v[1]+1):
+                mask = mask + (1<<i)
+            MSG_data[k] = (MSG & mask)>>v[0];
+        # print("PAYLOAD BIG: {0}".format(payload))
+        # for k, v in data_dict.items():
+        #     mask = payload[(v[0]//8):((v[1]//8)+1)]
+        #     MSG_data[k] = int.from_bytes(mask, byteorder='big')
+        #     print("MSG BIG: {0}".format(MSG_data[k]))
 
     # print("--- Data Dictionary ---")
     # print(MSG_data)

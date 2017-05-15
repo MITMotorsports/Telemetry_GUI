@@ -2,6 +2,7 @@ import sys
 import os
 import collections, itertools
 import csv
+import serial
 
 import CAN_SPEC
 from xbeeParser import parseMessage
@@ -86,10 +87,22 @@ def raw_to_csv(file_obj):
 def xbee_to_csv(xbee, filename):
     #read the data coming from the xbee into a giant buffer before parsing it
     xbee_buffer = collections.deque()
-    while xbee.in_waiting > 0:
-        val = xbee.read(1)
-        if val == b'\n':
-            xbee_buffer.append(val)
+    exit = False
+    while not exit:
+        try:
+            val = xbee.read(1)
+        except serial.SerialTimeoutException:
+            exit = True
+            break
+        # print(val)
+        if len(xbee_buffer) > 3 and val == b'\n':
+            e = xbee_buffer[-3]
+            n = xbee_buffer[-2]
+            d = xbee_buffer[-1]
+            if e==b'e' and n==b'n' and d==b'd':
+                exit = True
+                break
+        xbee_buffer.append(val)
 
     #Use the data file name to make a folder to put the CSV data
     csv_name = filename[:-4]
@@ -125,7 +138,7 @@ def xbee_to_csv(xbee, filename):
         while under_count < 3:
             val = xbee_buffer[i]
             i = i + 1
-            print(val)
+            # print(val)
             val = val.decode()
             if val == '_':
                 under_count = under_count + 1
@@ -141,15 +154,18 @@ def xbee_to_csv(xbee, filename):
         split_data = data_line.split('_')
         print('split_data: {0}'.format(split_data))
         payload_len = int(split_data[2])
-        payload = list(itertools.islice(xbee_buffer, i, i+payload_len))
+        payload = []
+        for b in range(i, i+payload_len):
+            print(xbee_buffer[b])
+            payload.append(int.from_bytes(xbee_buffer[b], byteorder='little'))
+        payload = bytearray(payload)
         i = i + payload_len
-        payload = xbee.read(payload_len)
 
         newline = 0
         while not newline:
             val = xbee_buffer[i]
             i = i + 1
-            print(val)
+            # print(val)
             val = val.decode()
             if val == '\n':
                 newline = 1

@@ -178,7 +178,7 @@ class DownloadSDWindow(QWidget):
     def connect_to_car(self, serialPort):
         #Open the serial port to communicate with xbee
         self.serialPort = serialPort
-        self.xbee = serial.Serial(port='/dev/'+serialPort, baudrate=115200, timeout=3)
+        self.xbee = serial.Serial(port='/dev/'+serialPort, baudrate=57600, timeout=3, parity=serial.PARITY_EVEN)
         self.xbee.isOpen()
         children = self.children()
         for i in children:
@@ -221,7 +221,7 @@ class DownloadSDWindow(QWidget):
 
     def download_file(self):
         self.xbee.reset_input_buffer() #get rid of junk that might cause issues
-
+        self.xbee.timeout = .5
         #Get file name from button name
         sender = self.sender()
         file_name = sender.objectName()
@@ -234,6 +234,7 @@ class DownloadSDWindow(QWidget):
         print(file_name)
 
         xbee_to_csv(self.xbee, file_name)
+        self.xbee.timeout = 3
         # #recieve data until black box sends "end\n" and print to file
         # out_file = open('../data/'+file_name, 'wb')
         # scan = True

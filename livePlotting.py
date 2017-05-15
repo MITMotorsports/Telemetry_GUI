@@ -151,7 +151,7 @@ class XbeeLiveData(QWidget):
         super().__init__()
         #Open the serial port to communicate with xbee
         self.serialPort = serialPort
-        self.xbee = serial.Serial(port='/dev/'+serialPort, baudrate=115200)
+        self.xbee = serial.Serial(port='/dev/'+serialPort, baudrate=57600, timeout=3, parity=serial.PARITY_EVEN)
         self.xbee.isOpen()
         #syncXbee(self.xbee)
         #Initialize a thread to run the live data view in
