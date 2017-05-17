@@ -65,6 +65,8 @@ def parseMessage(message, payload):
 
     #Endianess is BULLSHIT
     if CAN_SPEC.is_little_endian[ID]:
+        payload = bytearray(payload)
+        payload.reverse()
         print("PAYLOAD LITTLE: {0}".format(payload))
         print("BYTE 0: {0}".format(payload[0]))
         MSG = int.from_bytes(payload, byteorder='little')
@@ -75,9 +77,14 @@ def parseMessage(message, payload):
                 mask = mask + (1<<i)
             MSG_data[k] = (MSG & mask)>>v[0];
     else:
+        payload = bytearray(payload)
+        payload.reverse()
+        for i in range(0,len(payload)):
+            print(bin(payload[i]))
         print("PAYLOAD BIG: {0}".format(payload))
         print("BYTE 0: {0}".format(payload[0]))
         MSG = int.from_bytes(payload, byteorder='big')
+        print(bin(MSG))
         print("MSG BIG: {0}".format(MSG))
         for k, v in data_dict.items():
             mask = 0
