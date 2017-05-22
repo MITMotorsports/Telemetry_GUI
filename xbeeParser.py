@@ -1,6 +1,9 @@
 import time
 import CAN_SPEC
 
+XBEE_BAUD = 111111 #This is the ACTUAL baudrate the xbee runs at after dividing
+                    #down it's 16MHz clock
+
 TIME = 0
 BATTERY_SOC = 1
 BATTERY_TEMP = 2
@@ -50,25 +53,16 @@ def read_packet(xbee_stream):
     return xbeeData, payload
 
 def parseMessage(data_line, log_start):
-    #timestamp_ID_MSGLEN_MSG_LineCount
-    # print('Parsing message...')
-    meta = int.from_bytes(data_line[0:5], byteorder='little')
-    print("META: {0}".format(data_line[0:5]))
-    print("META: {0}".format(data_line[6:]))
-    print("META: {0}".format(data_line))
-    print("BYTE 0: {0}".format(data_line[0]))
-    MSG = int.from_bytes(data_line[0:5], byteorder='little')
-    print("META LITTLE: {0}".format(MSG))
-    MSG = int.from_bytes(data_line[0:5], byteorder='big')
-    print("META BIG: {0}".format(MSG))
 
+    print("Raw metadata: {0}".format(data_line[0:5]))
+    print("Raw payload: {0}".format(data_line[5:]))
+    meta = int.from_bytes(data_line[0:5], byteorder='little')
     payload = data_line[6:]
 
     timestamp = log_start + (meta>>11)/1000
 
     print('Timestamp: {0}'.format(timestamp))
     ID = meta & 0b11111111111 #ID is in least significant 11 bits
-    print('ID Name: {0}'.format(ID))
     ID = CAN_SPEC.ID_Dict.get(ID)
     if ID == None:
         return None, None, None
@@ -92,8 +86,8 @@ def parseMessage(data_line, log_start):
     else:
         payload = bytearray(payload)
         payload.reverse()
-        for i in range(0,len(payload)):
-            print(bin(payload[i]))
+        # for i in range(0,len(payload)):
+        #     print(bin(payload[i]))
         print("PAYLOAD BIG: {0}".format(payload))
         print("BYTE 0: {0}".format(payload[0]))
         MSG = int.from_bytes(payload, byteorder='big')

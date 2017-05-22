@@ -5,7 +5,7 @@ import csv
 import serial
 
 import CAN_SPEC
-from xbeeParser import parseMessage
+from xbeeParser import parseMessage, XBEE_BAUD
 
 #converts a whole file of raw CAN messages into a bunch of CSVs
 def raw_to_csv(file_obj):
@@ -61,30 +61,40 @@ def raw_to_csv(file_obj):
 
 #converts a downloaded file of raw CAN messages into a bunch of CSVs
 #parses output until the xbee sends 'end\n'
-def xbee_to_csv(xbee, filename):
+def xbee_to_csv(xbee, filename, pbar):
     #read the data coming from the xbee into a giant buffer before parsing it
     xbee_buffer = collections.deque()
+
+    val = xbee.read(4) #first four bytes are the file size in bytes
+    file_size = int.from_bytes(val, byteorder='little')
+    dl_time = (file_size/XBEE_BAUD)/60.0 #the estimated download time in minutes
+    print('Estimated Download Time: {0} minutes'.format(dl_time))
+
+    bytes_downloaded = 0;
+    pbar.setValue((bytes_downloaded/file_size)*100)
+
+    val = xbee.read(4) #second four bytes of the file are the log_start timestamp
+    log_start = int.from_bytes(val, byteorder='little')
+    print('log_start {0}'.format(log_start))
+    bytes_downloaded = bytes_downloaded + 4
+
+    #read 13 byte chunks until 13 bytes of 1's are seen, this is the EOF
     exit = False
+    stop_code = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
     while not exit:
-        try:
-            val = xbee.read(1)
-        except serial.SerialTimeoutException:
+        val = xbee.read(13)
+        if val == b'' or val == stop_code:
             exit = True
             break
-        # print(val)
-        if len(xbee_buffer) > 3 and val == b'\n':
-            e = xbee_buffer[-3]
-            n = xbee_buffer[-2]
-            d = xbee_buffer[-1]
-            if e==b'e' and n==b'n' and d==b'd':
-                exit = True
-                break
         xbee_buffer.append(val)
+        bytes_downloaded = bytes_downloaded + 13
+        pbar.setValue((bytes_downloaded/file_size)*100)
 
     #Use the data file name to make a folder to put the CSV data
     csv_name = filename[:-4]
     csv_output_folder = '../data/'+csv_name+'_csv_data'
-    os.mkdir(csv_output_folder)
+    if not os.path.isdir(csv_output_folder):
+        os.mkdir(csv_output_folder)
 
     #create one csv file for every type of CAN messages
     #this makes handling the data easier because each data row will have the
@@ -102,58 +112,17 @@ def xbee_to_csv(xbee, filename):
         col_name_header.extend(col_keys)
         output_csv_dict[k].writerow(col_name_header)
 
-    #parse data file and put data into appropriate CSV files
-    exit = False
-    i = 0
-    while not exit:
-        # timestamp_ID_MSGLEN_MSG_LineCount
-        # ASCCI_ ASCII_ASCII_ BYTES_ASCII
-        print('Reading new line...')
-        data_line = ''
+    #parse data file buffer and put data into appropriate CSV files
+    for i in xbee_buffer:
+        data_line = i
+        print('Raw Data: {0}'.format(data_line))
 
-        under_count = 0
-        while under_count < 3:
-            val = xbee_buffer[i]
-            i = i + 1
-            # print(val)
-            val = val.decode()
-            if val == '_':
-                under_count = under_count + 1
-            data_line += val
-            if data_line == 'end':
-                print('End of file reached')
-                exit = True
-                break
+        timestamp, ID, MSG_data  = parseMessage(data_line, log_start)
 
-        if exit:
-            break
-
-        split_data = data_line.split('_')
-        print('split_data: {0}'.format(split_data))
-        payload_len = int(split_data[2])
-        payload = []
-        for b in range(i, i+payload_len):
-            print(xbee_buffer[b])
-            payload.append(int.from_bytes(xbee_buffer[b], byteorder='little'))
-        payload = bytearray(payload)
-        i = i + payload_len
-
-        newline = 0
-        while not newline:
-            val = xbee_buffer[i]
-            i = i + 1
-            # print(val)
-            val = val.decode()
-            if val == '\n':
-                newline = 1
-                break
-            data_line += val
-
-        print('raw_data: {0}'.format(data_line))
-        timestamp, ID, MSG_data  = parseMessage(data_line, payload)
         print('timestamp: {0}'.format(timestamp))
         print('ID: {0}'.format(ID))
         print('MSG_data: {0}\n'.format(MSG_data))
+
         out = [timestamp]
         for k in output_csv_dict_col_map[ID]:
             out.append(MSG_data[k])

@@ -11,6 +11,7 @@ from PyQt5.QtCore import QCoreApplication, Qt, QTimer, QEvent
 
 from livePlotting import XbeeLiveData
 from csv_output import raw_to_csv, xbee_to_csv
+from xbeeParser import XBEE_BAUD
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -178,7 +179,7 @@ class DownloadSDWindow(QWidget):
     def connect_to_car(self, serialPort):
         #Open the serial port to communicate with xbee
         self.serialPort = serialPort
-        self.xbee = serial.Serial(port='/dev/'+serialPort, baudrate=57600, timeout=3, parity=serial.PARITY_EVEN)
+        self.xbee = serial.Serial(port='/dev/'+serialPort, baudrate=XBEE_BAUD, timeout=3, parity=serial.PARITY_EVEN)
         self.xbee.isOpen()
         children = self.children()
         for i in children:
@@ -187,8 +188,11 @@ class DownloadSDWindow(QWidget):
         file_list = self.list_files()
 
     def list_files(self):
-        self.xbee.reset_input_buffer() #get rid of junk that might cause issues
+        self.pbar = QProgressBar(self)
+        self.pbar.setGeometry(30, 40, 200, 25)
+        self.v1.addWidget(self.pbar)
 
+        self.xbee.reset_input_buffer() #get rid of junk that might cause issues
         self.xbee.write('ls\n'.encode('utf-8'))
         scan = True
         xbeeData = ''
@@ -221,7 +225,6 @@ class DownloadSDWindow(QWidget):
 
     def download_file(self):
         self.xbee.reset_input_buffer() #get rid of junk that might cause issues
-        self.xbee.timeout = .5
         #Get file name from button name
         sender = self.sender()
         file_name = sender.objectName()
@@ -233,32 +236,7 @@ class DownloadSDWindow(QWidget):
         file_name = file_name[0:-1]
         print(file_name)
 
-        xbee_to_csv(self.xbee, file_name)
-        self.xbee.timeout = 3
-        # #recieve data until black box sends "end\n" and print to file
-        # out_file = open('../data/'+file_name, 'wb')
-        # scan = True
-        # xbeeData = ''
-        # new_line_found = 0
-        # while scan:
-        #     # tmp = []
-        #     if self.xbee.in_waiting > 0:
-        #         val = self.xbee.read(1)
-        #         # tmp.append(val)
-        #
-        #         if val == b'\n':
-        #             if 'end' in xbeeData:
-        #                 out_file.close()
-        #                 scan = False
-        #                 break
-        #             else:
-        #                 print(xbeeData)
-        #                 out_file.write(xbeeData+'\n');
-        #                 xbeeData = ''
-        #         else:
-        #             xbeeData += val.decode()
-
-
+        xbee_to_csv(self.xbee, file_name, self.pbar)
 
     def closeEvent(self, event):
         reply = QMessageBox.question(self, 'Message',
