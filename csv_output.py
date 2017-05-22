@@ -16,7 +16,8 @@ def raw_to_csv(file_obj):
     #Use the data file name to make a folder to put the CSV data
     csv_name = file_path[-1][:-4]
     csv_output_folder = '../data/'+csv_name+'_csv_data'
-    os.mkdir(csv_output_folder)
+    if not os.path.isdir(csv_output_folder):
+        os.mkdir(csv_output_folder)
 
     #create one csv file for every type of CAN messages
     #this makes handling the data easier because each data row will have the
@@ -35,46 +36,22 @@ def raw_to_csv(file_obj):
         output_csv_dict[k].writerow(col_name_header)
 
     #parse data file and put data into appropriate CSV files
-    exit = False
-    while not exit:
-        # timestamp_ID_MSGLEN_MSG_LineCount
-        # ASCCI_ ASCII_ASCII_ BYTES_ASCII
-        data_line = ''
+    val = file_obj.read(4) #record the log start timestamp at head of file
+    log_start = int.from_bytes(val, byteorder='little')
+    print(log_start)
 
-        under_count = 0
-        while under_count < 3:
-            val = file_obj.read(1).decode()
-            print(val)
-            if val == '':
-                exit = True
-                break
-            if val == '_':
-                under_count = under_count + 1
-            data_line += val
-
-        if exit:
-            break
-
-        split_data = data_line.split('_')
-        payload_len = int(split_data[2])
-        payload = file_obj.read(payload_len)
-
-        newline = 0
-        while not newline:
-            val = file_obj.read(1).decode()
-            print(val)
-            if val == '':
-                break
-            if val == '\n':
-                newline = 1
-                break
-            data_line += val
-
-        timestamp, ID, MSG_data  = parseMessage(data_line, payload)
+    #read until EOF is hit
+    data_line = file_obj.read(13)
+    print('FIRST READ RAW: {0}'.format(data_line))
+    while data_line != b'':
+        timestamp, ID, MSG_data  = parseMessage(data_line, log_start)
         out = [timestamp]
         for k in output_csv_dict_col_map[ID]:
             out.append(MSG_data[k])
         output_csv_dict[ID].writerow(out)
+
+        data_line = file_obj.read(13)
+        print('END OF LOOP READ RAW: {0}'.format(data_line))
 
     #CLOSE ALL THE FILES
     for k,v in output_file_dict.items():

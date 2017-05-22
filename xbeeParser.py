@@ -49,17 +49,30 @@ def read_packet(xbee_stream):
 
     return xbeeData, payload
 
-def parseMessage(message, payload):
+def parseMessage(data_line, log_start):
     #timestamp_ID_MSGLEN_MSG_LineCount
     # print('Parsing message...')
-    spiltMessage = message.split('_')
-    timestamp = int(spiltMessage[0])
-    # print('Timestamp: {0}'.format(timestamp))
-    ID = int(spiltMessage[1])
+    meta = int.from_bytes(data_line[0:5], byteorder='little')
+    print("META: {0}".format(data_line[0:5]))
+    print("META: {0}".format(data_line[6:]))
+    print("META: {0}".format(data_line))
+    print("BYTE 0: {0}".format(data_line[0]))
+    MSG = int.from_bytes(data_line[0:5], byteorder='little')
+    print("META LITTLE: {0}".format(MSG))
+    MSG = int.from_bytes(data_line[0:5], byteorder='big')
+    print("META BIG: {0}".format(MSG))
+
+    payload = data_line[6:]
+
+    timestamp = log_start + (meta>>11)/1000
+
+    print('Timestamp: {0}'.format(timestamp))
+    ID = meta & 0b11111111111 #ID is in least significant 11 bits
+    print('ID Name: {0}'.format(ID))
     ID = CAN_SPEC.ID_Dict.get(ID)
     if ID == None:
         return None, None, None
-    # print('ID Name: {0}'.format(ID))
+    print('ID Name: {0}'.format(ID))
     data_dict = CAN_SPEC.Data_Pos_Dict[ID]
     MSG_data = {}
 
@@ -104,31 +117,6 @@ def parseMessage(message, payload):
     return timestamp, ID, MSG_data
 
 
-def parseMessage2(message):
-    spiltMessage = message.split('_')
-
-    try:
-        time = int(spiltMessage[TIME_POS])
-        dataType = int(spiltMessage[DATA_TYPE_POS])
-        data = int(spiltMessage[DATA_POS])
-    except ValueError as e:
-        return None
-
-    if dataType == BATTERY_SOC:
-        return {BATTERY_SOC:data, TIME:time}
-    elif dataType == BATTERY_TEMP:
-        data = batteryTempParse(data)
-        return {BATTERY_TEMP:data, TIME:time}
-    elif dataType == BATTERY_VOLTAGE:
-        return {BATTERY_VOLTAGE:data, TIME:time}
-    elif dataType == THROTTLE:
-        return {THROTTLE:data, TIME:time}
-    elif dataType == BRAKE:
-        return {BRAKE:data, TIME:time}
-    elif dataType == SPEED:
-        return {SPEED:data, TIME:time}
-    else:
-        return None
 
 def syncXbee(xBeeSerial):
     notSync = True
