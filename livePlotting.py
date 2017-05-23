@@ -53,7 +53,9 @@ class batteryGraph(MyMplCanvas):
         first = CAN_SPEC.Data_Pos_Dict['CURRENT_SENSOR_ENERGY']['PACK_ENERGY'][0]
         last = CAN_SPEC.Data_Pos_Dict['CURRENT_SENSOR_ENERGY']['PACK_ENERGY'][1]
         max_soc = 2**(last - first + 1) - 1
-        soc = (soc/max_soc)*100
+        print(max_soc)
+        soc = (soc/max_soc)*1000
+        print(soc)
         if soc >= 20:
             c = 'y'
             if soc >= 50:
@@ -207,18 +209,21 @@ class XbeeLiveData(QWidget):
         while(self.continueThread.is_set()):
             tmp = []
             if self.xbee.in_waiting > 0:
-                xbeeData, payload = read_packet(self.xbee)
+                xbeeData = self.xbee.read(13)
 
                 print('xbeeData {0}'.format(xbeeData))
+                timestamp, ID, MSG = parseMessage(xbeeData, 0)
+                ts_print = 'Timestamp: {0}'.format(timestamp)
+                id_print = 'ID Name: {0}'.format(ID)
+                msg_print = 'MSG DATA: {0}'.format(MSG)
+                print(ts_print)
+                print(id_print)
+                print(msg_print)
 
                 self.logOutput.moveCursor(QTextCursor.End)
-                self.logOutput.insertPlainText(xbeeData+'\n')
+                self.logOutput.insertPlainText(ts_print + ' ' + id_print + ' ' + msg_print + '\n')
                 sb = self.logOutput.verticalScrollBar()
                 sb.setValue(sb.maximum())
-                timestamp, ID, MSG = parseMessage(xbeeData, payload)
-                print('Timestamp: {0}'.format(timestamp))
-                print('ID Name: {0}'.format(ID))
-                print('MSG DATA: {0}'.format(MSG))
 
                 if ID != None:
                     self.updateVisuals(timestamp, ID, MSG)
@@ -236,8 +241,11 @@ class XbeeLiveData(QWidget):
             self.throttleGraph.update_figure(timestamp, torque)
 
             pressure = MSG['BRAKE_PRESSURE']
+            print("pres: {0}".format(pressure))
             first = CAN_SPEC.Data_Pos_Dict['FRONT_CAN_NODE_DRIVER_OUTPUT']['BRAKE_PRESSURE'][0]
+            print("first: {0}".format(first))
             last = CAN_SPEC.Data_Pos_Dict['FRONT_CAN_NODE_DRIVER_OUTPUT']['BRAKE_PRESSURE'][1]
+            print("last: {0}".format(last))
             max_pressure = 2**(last - first + 1) - 1
             pressure = (pressure/max_pressure)*100
             self.brakeGraph.update_figure(timestamp, MSG['BRAKE_PRESSURE'])

@@ -84,8 +84,9 @@ def parseMessage(data_line, log_start):
                 mask = mask + (1<<i)
             MSG_data[k] = (MSG & mask)>>v[0];
     else:
-        payload = bytearray(payload)
-        payload.reverse()
+        if ID != 1320:
+            payload = bytearray(payload)
+            payload.reverse()
         # for i in range(0,len(payload)):
         #     print(bin(payload[i]))
         print("PAYLOAD BIG: {0}".format(payload))
@@ -97,6 +98,10 @@ def parseMessage(data_line, log_start):
             mask = 0
             for i in range(v[0], v[1]+1):
                 mask = mask + (1<<i)
+            #     print("Mask: {0}".format(bin(mask)))
+            #     print("MSG: {0}".format(bin(MSG)))
+            # print("msgandmask: {0}".format(bin(MSG & mask)))
+            # print("shift: {0}".format(bin((MSG & mask)>>v[0])))
             MSG_data[k] = (MSG & mask)>>v[0];
         # print("PAYLOAD BIG: {0}".format(payload))
         # for k, v in data_dict.items():
